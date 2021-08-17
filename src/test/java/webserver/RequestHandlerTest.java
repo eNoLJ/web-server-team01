@@ -1,54 +1,68 @@
 package webserver;
 
-import org.junit.BeforeClass;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockserver.client.MockServerClient;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.Header;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
+import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockserver.integration.ClientAndServer.startClientAndServer;
-import static org.mockserver.matchers.Times.exactly;
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.HttpResponse.response;
-import static org.mockserver.model.StringBody.exact;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class RequestHandlerTest {
 
-    static private ClientAndServer mockServer;
+    private static final Logger log = LoggerFactory.getLogger(RequestHandlerTest.class);
+    private static final int PORT = 8081;
 
-    @BeforeAll
-    static void startServer() {
-        mockServer = startClientAndServer(8081);
+    private ServerSocket listenSocket;
+    private Socket connection;
+
+    @BeforeEach
+    void startServer() throws IOException {
+        listenSocket = new ServerSocket(PORT);
+        connection = new Socket("localhost", PORT);
     }
 
-    @AfterAll
-    static void stopServer() {
-        mockServer.stop();
+    @AfterEach
+    void stopServer() throws IOException {
+        listenSocket.close();
+        connection.close();
     }
 
     @Test
-    void run() {
-        new MockServerClient("127.0.0.1",8081)
-            .when(
-                request()
-                    .withMethod("GET")
-                    .withPath("/"),
-//                    .withHeader("\"Content-type\", \"application/json\""),
-                exactly(1))
-            .respond(
-                response()
-                    .withStatusCode(404)
-//                    .withHeaders(
-//                            new Header("Content-Type", "application/json; charset=utf-8"))
-                    .withBody("Hello World")
-//                    .withDelay(TimeUnit.SECONDS,1)
-            );
+    void run() throws IOException {
 
+        RequestHandler requestHandler = new RequestHandler(listenSocket.accept());
 
+        BufferedOutputStream bufferedStream = new BufferedOutputStream(connection.getOutputStream());
+
+        String requestHeaders = "GET /index.html HTTP/1.1" + System.lineSeparator() +
+                "Host: localhost:8080" + System.lineSeparator() +
+                "Connection: keep-alive" + System.lineSeparator() +
+                "Accept: */*" + System.lineSeparator() +
+                "" + System.lineSeparator();
+
+        bufferedStream.write(requestHeaders.getBytes(StandardCharsets.UTF_8));
+        bufferedStream.write(System.lineSeparator().getBytes(StandardCharsets.UTF_8));
+        bufferedStream.flush();
+
+        requestHandler.run();
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+
+        String expectedResponseMessage = "HTTP/1.1 200 OK" + System.lineSeparator() +
+                "Content-Type: text/html;charset=utf-8" + System.lineSeparator() +
+                "Content-Length: 6903" + System.lineSeparator() +
+                "" + System.lineSeparator() +
+                Files.lines(new File("./webapp/index.html").toPath())
+                        .collect(Collectors.joining(System.lineSeparator()));
+
+        assertThat(br.lines().collect(Collectors.joining(System.lineSeparator()))).isEqualTo(expectedResponseMessage);
     }
 }
