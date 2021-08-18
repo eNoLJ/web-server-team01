@@ -1,8 +1,9 @@
 package webserver;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +16,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class RequestHandlerTest {
+public class RequestHandlerTest {
 
     private static final Logger log = LoggerFactory.getLogger(RequestHandlerTest.class);
     private static final int PORT = 8081;
@@ -36,7 +37,8 @@ class RequestHandlerTest {
     }
 
     @Test
-    void run() throws IOException {
+    @DisplayName("Http 요청에 따라 응답이 정상적으로 오는지 확인")
+    public void run() throws IOException {
 
         RequestHandler requestHandler = new RequestHandler(listenSocket.accept());
 
