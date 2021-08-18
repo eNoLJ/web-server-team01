@@ -7,9 +7,11 @@ import java.nio.file.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RequestHandler extends Thread {
-    private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
+import static util.HttpRequestUtils.getUriByStartLine;
 
+public class RequestHandler extends Thread {
+
+    private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
     private Socket connection;
 
     public RequestHandler(Socket connectionSocket) {
@@ -24,27 +26,11 @@ public class RequestHandler extends Thread {
             InputStreamReader inputStreamReader = new InputStreamReader(in);
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 
-            String[] token = null;
-            String headerLine;
-
-            while (!"".equals(headerLine = bufferedReader.readLine())) {
-                log.debug(headerLine);
-                if (headerLine == null) {
-                    return;
-                }
-                if (headerLine.contains("GET")) {
-                    token = headerLine.split(" ");
-                    break;
-                }
-            }
+            String uri = getUriByStartLine(bufferedReader.readLine());
 
             DataOutputStream dos = new DataOutputStream(out);
-            byte[] body = "Hello World".getBytes();
-            if (token != null) {
-                if (!token[1].equals("/")) {
-                    body = Files.readAllBytes(new File("./webapp" + token[1]).toPath());
-                }
-            }
+
+            byte[] body = getBodyByUri(uri);
             response200Header(dos, body.length);
             responseBody(dos, body);
         } catch (IOException e) {
@@ -70,5 +56,15 @@ public class RequestHandler extends Thread {
         } catch (IOException e) {
             log.error(e.getMessage());
         }
+    }
+
+    private byte[] getBodyByUri(String uri) throws IOException {
+        byte[] body = "Hello World".getBytes();
+        if (uri != null) {
+            if (!uri.equals("/")) {
+                body = Files.readAllBytes(new File("./webapp" + uri).toPath());
+            }
+        }
+        return body;
     }
 }
