@@ -1,5 +1,6 @@
 package webserver;
 
+import model.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.stream.Collectors;
 
+import static db.DataBase.findUserById;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RequestHandlerTest {
@@ -39,24 +41,13 @@ public class RequestHandlerTest {
     @Test
     @DisplayName("Http 요청에 따라 응답이 정상적으로 오는지 확인")
     public void run() throws IOException {
-
-        RequestHandler requestHandler = new RequestHandler(listenSocket.accept());
-
-        BufferedOutputStream bufferedStream = new BufferedOutputStream(connection.getOutputStream());
-
         String requestHeaders = "GET /index.html HTTP/1.1" + System.lineSeparator() +
                 "Host: localhost:8080" + System.lineSeparator() +
                 "Connection: keep-alive" + System.lineSeparator() +
                 "Accept: */*" + System.lineSeparator() +
                 "" + System.lineSeparator();
 
-        bufferedStream.write(requestHeaders.getBytes(StandardCharsets.UTF_8));
-        bufferedStream.write(System.lineSeparator().getBytes(StandardCharsets.UTF_8));
-        bufferedStream.flush();
-
-        requestHandler.run();
-
-        BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        sendRequest(requestHeaders);
 
         String expectedResponseMessage = "HTTP/1.1 200 OK" + System.lineSeparator() +
                 "Content-Type: text/html;charset=utf-8" + System.lineSeparator() +
@@ -65,6 +56,33 @@ public class RequestHandlerTest {
                 Files.lines(new File("./webapp/index.html").toPath())
                         .collect(Collectors.joining(System.lineSeparator()));
 
+        BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+
         assertThat(br.lines().collect(Collectors.joining(System.lineSeparator()))).isEqualTo(expectedResponseMessage);
+    }
+
+    @Test
+    @DisplayName("uri를 파싱해 user를 저장하는지 확인")
+    public void createUser() throws IOException {
+        String requestHeaders = "GET /webapp/user/create?userId=testUser&password=testPassword&name=testName&email=testEmail%40test.co.kr HTTP/1.1" + System.lineSeparator() +
+                "Host: localhost:8080" + System.lineSeparator() +
+                "Connection: keep-alive" + System.lineSeparator() +
+                "Accept: */*" + System.lineSeparator() +
+                "" + System.lineSeparator();
+
+        sendRequest(requestHeaders);
+
+        User user = findUserById("testUser");
+        assertThat(new User("testUser", "testPassword", "testName", "testEmail@test.co.kr")).isEqualTo(user);
+    }
+
+    private void sendRequest(String requestHeaders) throws IOException {
+        RequestHandler requestHandler = new RequestHandler(listenSocket.accept());
+        BufferedOutputStream bufferedStream = new BufferedOutputStream(connection.getOutputStream());
+
+        bufferedStream.write(requestHeaders.getBytes(StandardCharsets.UTF_8));
+        bufferedStream.write(System.lineSeparator().getBytes(StandardCharsets.UTF_8));
+        bufferedStream.flush();
+        requestHandler.run();
     }
 }
