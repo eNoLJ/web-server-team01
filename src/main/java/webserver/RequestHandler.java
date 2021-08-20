@@ -2,12 +2,17 @@ package webserver;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.URLDecoder;
 import java.nio.file.Files;
+import java.util.Map;
 
+import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static db.DataBase.addUser;
 import static util.HttpRequestUtils.getUriByStartLine;
+import static util.HttpRequestUtils.parseQueryString;
 
 public class RequestHandler extends Thread {
 
@@ -27,6 +32,9 @@ public class RequestHandler extends Thread {
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 
             String uri = getUriByStartLine(bufferedReader.readLine());
+
+            User user = getUserByUri(uri);
+            saveUser(user);
 
             DataOutputStream dos = new DataOutputStream(out);
 
@@ -66,5 +74,25 @@ public class RequestHandler extends Thread {
             }
         }
         return body;
+    }
+
+    private User getUserByUri(String uri) {
+        try {
+            String[] queryString = URLDecoder.decode(uri, "UTF-8").split("\\?");
+            Map<String, String> parsedQueryString = parseQueryString(queryString[1]);
+            return new User(parsedQueryString.get("userId"),
+                    parsedQueryString.get("password"),
+                    parsedQueryString.get("name"),
+                    parsedQueryString.get("email"));
+        } catch (ArrayIndexOutOfBoundsException | UnsupportedEncodingException e) {
+            log.error(e.getMessage());
+        }
+        return null;
+    }
+
+    private void saveUser(User user) {
+        if (user != null) {
+            addUser(user);
+        }
     }
 }
