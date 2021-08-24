@@ -2,43 +2,47 @@ package webserver;
 
 import java.io.*;
 import java.net.Socket;
-import java.net.URLDecoder;
 import java.nio.file.Files;
-import java.util.Map;
 
-import model.User;
+import exception.InvalidUriException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static db.DataBase.addUser;
-import static util.HttpRequestUtils.getUriByStartLine;
-import static util.HttpRequestUtils.parseQueryString;
+import service.UserService;
+import util.RequestInfo;
 
 public class RequestHandler extends Thread {
 
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
-    private Socket connection;
+    private final Socket connection;
 
     public RequestHandler(Socket connectionSocket) {
         this.connection = connectionSocket;
     }
 
     public void run() {
-        log.debug("New Client Connect! Connected IP : {}, Port : {}", connection.getInetAddress(),
+        log.debug("New Client Connect! Connected IP : {}, Port : {}",
+                connection.getInetAddress(),
                 connection.getPort());
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             InputStreamReader inputStreamReader = new InputStreamReader(in);
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 
-            String uri = getUriByStartLine(bufferedReader.readLine());
+            RequestInfo requestInfo = RequestInfo.of(bufferedReader);
+            byte[] body = "Hello World".getBytes();
 
-            User user = getUserByUri(uri);
-            saveUser(user);
+            if (requestInfo.matchMethod("GET") && requestInfo.matchUri("/index.html")) {
+                body = getBodyByUri("/index.html");
+            }
+            if (requestInfo.matchMethod("GET") && requestInfo.matchUri("/user/form.html")) {
+                body = getBodyByUri("/user/form.html");
+            }
+            if (requestInfo.matchMethod("POST") && requestInfo.matchUri("/user/create")) {
+                UserService.save(requestInfo.getBodies());
+                body = getBodyByUri("/index.html");
+            }
 
             DataOutputStream dos = new DataOutputStream(out);
-
-            byte[] body = getBodyByUri(uri);
             response200Header(dos, body.length);
             responseBody(dos, body);
         } catch (IOException e) {
@@ -67,32 +71,9 @@ public class RequestHandler extends Thread {
     }
 
     private byte[] getBodyByUri(String uri) throws IOException {
-        byte[] body = "Hello World".getBytes();
-        if (uri != null) {
-            if (!uri.equals("/")) {
-                body = Files.readAllBytes(new File("./webapp" + uri).toPath());
-            }
+        if (uri == null) {
+            throw new InvalidUriException();
         }
-        return body;
-    }
-
-    private User getUserByUri(String uri) {
-        try {
-            String[] queryString = URLDecoder.decode(uri, "UTF-8").split("\\?");
-            Map<String, String> parsedQueryString = parseQueryString(queryString[1]);
-            return new User(parsedQueryString.get("userId"),
-                    parsedQueryString.get("password"),
-                    parsedQueryString.get("name"),
-                    parsedQueryString.get("email"));
-        } catch (ArrayIndexOutOfBoundsException | UnsupportedEncodingException e) {
-            log.error(e.getMessage());
-        }
-        return null;
-    }
-
-    private void saveUser(User user) {
-        if (user != null) {
-            addUser(user);
-        }
+        return Files.readAllBytes(new File("./webapp" + uri).toPath());
     }
 }
