@@ -13,6 +13,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static db.DataBase.findUserById;
@@ -64,16 +66,24 @@ public class RequestHandlerTest {
     @Test
     @DisplayName("uri를 파싱해 user를 저장하는지 확인")
     public void createUser() throws IOException {
-        String requestHeaders = "GET /webapp/user/create?userId=testUser&password=testPassword&name=testName&email=testEmail%40test.co.kr HTTP/1.1" + System.lineSeparator() +
+        String requestHeaders = "POST /user/create HTTP/1.1" + System.lineSeparator() +
                 "Host: localhost:8080" + System.lineSeparator() +
                 "Connection: keep-alive" + System.lineSeparator() +
                 "Accept: */*" + System.lineSeparator() +
-                "" + System.lineSeparator();
+                "Content-Length: 80" + System.lineSeparator() +
+                "" + System.lineSeparator() +
+                "userId=testUser&password=testPassword&name=testName&email=testEmail@test.co.kr";
 
         sendRequest(requestHeaders);
 
         User user = findUserById("testUser");
-        assertThat(new User("testUser", "testPassword", "testName", "testEmail@test.co.kr")).isEqualTo(user);
+        Map<String, String> userInfo = new HashMap<String, String>() {{
+            put("userId", "testUser");
+            put("password", "testPassword");
+            put("name", "testName");
+            put("email", "testEmail@test.co.kr");
+        }};
+        assertThat(User.of(userInfo)).isEqualTo(user);
     }
 
     private void sendRequest(String requestHeaders) throws IOException {
