@@ -4,7 +4,6 @@ import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
 
-import exception.InvalidUriException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import service.UserService;
@@ -27,24 +26,21 @@ public class RequestHandler extends Thread {
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             InputStreamReader inputStreamReader = new InputStreamReader(in);
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-
-            RequestInfo requestInfo = RequestInfo.of(bufferedReader);
-            byte[] body = "Hello World".getBytes();
-
-            if (requestInfo.matchMethod("GET") && requestInfo.matchUri("/index.html")) {
-                body = getBodyByUri("/index.html");
-            }
-            if (requestInfo.matchMethod("GET") && requestInfo.matchUri("/user/form.html")) {
-                body = getBodyByUri("/user/form.html");
-            }
-            if (requestInfo.matchMethod("POST") && requestInfo.matchUri("/user/create")) {
-                UserService.save(requestInfo.getBodies());
-                body = getBodyByUri("/index.html");
-            }
-
             DataOutputStream dos = new DataOutputStream(out);
-            response200Header(dos, body.length);
-            responseBody(dos, body);
+            RequestInfo requestInfo = RequestInfo.of(bufferedReader);
+
+            if (requestInfo.matchMethod("GET")) {
+                byte[] body = getBodyByUri(requestInfo.getUri());
+                response200Header(dos, body.length);
+                responseBody(dos, body);
+            }
+
+            if (requestInfo.matchMethod("POST")) {
+                if (requestInfo.matchUri("/user/create")) {
+                    UserService.save(requestInfo.getBodies());
+                }
+                response302Header(dos, "/index.html");
+            }
         } catch (IOException e) {
             log.error(e.getMessage());
         }
@@ -61,6 +57,16 @@ public class RequestHandler extends Thread {
         }
     }
 
+    private void response302Header(DataOutputStream dos, String redirectUri) {
+        try {
+            dos.writeBytes("HTTP/1.1 302 Found\r\n");
+            dos.writeBytes("Location: http://localhost:8080" + redirectUri + "\r\n");
+            dos.writeBytes("\r\n");
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+    }
+
     private void responseBody(DataOutputStream dos, byte[] body) {
         try {
             dos.write(body, 0, body.length);
@@ -71,9 +77,6 @@ public class RequestHandler extends Thread {
     }
 
     private byte[] getBodyByUri(String uri) throws IOException {
-        if (uri == null) {
-            throw new InvalidUriException();
-        }
         return Files.readAllBytes(new File("./webapp" + uri).toPath());
     }
 }

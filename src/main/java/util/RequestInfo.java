@@ -23,12 +23,7 @@ public class RequestInfo {
     public static RequestInfo of(BufferedReader bufferedReader) throws IOException {
         Map<String, String> startLine = getStartLine(bufferedReader);
         Map<String, String> headers = getHeaders(bufferedReader);
-        Map<String, String> bodies = new HashMap<>();
-        try {
-            bodies = getBodies(bufferedReader, Integer.parseInt(headers.get("Content-Length")));
-        } catch (NumberFormatException e) {
-            log.error(e.getMessage());
-        }
+        Map<String, String> bodies = getBodies(bufferedReader, headers);
         return new RequestInfo(startLine, headers, bodies);
     }
 
@@ -55,8 +50,11 @@ public class RequestInfo {
         return headers;
     }
 
-    private static Map<String, String> getBodies(BufferedReader bufferedReader, int contentLength) throws IOException {
-        String body = URLDecoder.decode(readData(bufferedReader, contentLength), "UTF-8");
+    private static Map<String, String> getBodies(BufferedReader bufferedReader, Map<String, String> headers) throws IOException {
+        if (!headers.containsKey("Content-Length")) {
+            return null;
+        }
+        String body = URLDecoder.decode(readData(bufferedReader,  Integer.parseInt(headers.get("Content-Length"))), "UTF-8");
         return parseValues(body, "&");
     }
 
@@ -76,5 +74,9 @@ public class RequestInfo {
 
     public Map<String, String> getBodies() {
         return bodies;
+    }
+
+    public String getUri() {
+        return startLine.get("Uri");
     }
 }
