@@ -18,4 +18,8 @@ public class UserService {
             addUser(user);
         }
     }
+
+    public boolean login(Map<String, String> userInfo) {
+        return matchUserByIdAndPassword(userInfo.get("userId"), userInfo.get("password"));
+    }
 }

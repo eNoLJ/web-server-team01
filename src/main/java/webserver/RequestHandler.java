@@ -41,6 +41,12 @@ public class RequestHandler extends Thread {
                 if (requestInfo.matchUri("/user/create")) {
                     userService.save(requestInfo.getBodies());
                 }
+                if (requestInfo.matchUri("/user/login")) {
+                    boolean isLogin = userService.login(requestInfo.getBodies());
+                    if (!isLogin) {
+                        response302Header(dos, "/user/login_failed.html");
+                    }
+                }
                 response302Header(dos, "/index.html");
             }
         } catch (IOException e) {
