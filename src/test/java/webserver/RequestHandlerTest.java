@@ -86,6 +86,27 @@ public class RequestHandlerTest {
         assertThat(User.of(userInfo)).isEqualTo(user);
     }
 
+    @Test
+    @DisplayName("회원 가입 성공 시, HTTP 302 응답코드 발생 및 index.html로 redirect되는지 확인")
+    public void reDirectIndex() throws IOException {
+        String requestHeaders = "POST /user/create HTTP/1.1" + System.lineSeparator() +
+                "Host: localhost:8080" + System.lineSeparator() +
+                "Connection: keep-alive" + System.lineSeparator() +
+                "Accept: */*" + System.lineSeparator() +
+                "Content-Length: 80" + System.lineSeparator() +
+                "" + System.lineSeparator() +
+                "userId=testUser&password=testPassword&name=testName&email=testEmail@test.co.kr";
+
+        sendRequest(requestHeaders);
+
+        String expectedResponseMessage = "HTTP/1.1 302 Found" + System.lineSeparator() +
+                "Location: http://localhost:8080/index.html" + System.lineSeparator();
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+
+        assertThat(br.lines().collect(Collectors.joining(System.lineSeparator()))).isEqualTo(expectedResponseMessage);
+    }
+
     private void sendRequest(String requestHeaders) throws IOException {
         RequestHandler requestHandler = new RequestHandler(listenSocket.accept());
         BufferedOutputStream bufferedStream = new BufferedOutputStream(connection.getOutputStream());
