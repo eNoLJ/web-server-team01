@@ -13,9 +13,11 @@ public class RequestHandler extends Thread {
 
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
     private final Socket connection;
+    private final UserService userService;
 
-    public RequestHandler(Socket connectionSocket) {
+    public RequestHandler(Socket connectionSocket, UserService userService) {
         this.connection = connectionSocket;
+        this.userService = userService;
     }
 
     public void run() {
@@ -37,7 +39,7 @@ public class RequestHandler extends Thread {
 
             if (requestInfo.matchMethod("POST")) {
                 if (requestInfo.matchUri("/user/create")) {
-                    UserService.save(requestInfo.getBodies());
+                    userService.save(requestInfo.getBodies());
                 }
                 response302Header(dos, "/index.html");
             }

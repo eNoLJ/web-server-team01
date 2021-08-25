@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import service.UserService;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -108,7 +109,7 @@ public class RequestHandlerTest {
     }
 
     private void sendRequest(String requestHeaders) throws IOException {
-        RequestHandler requestHandler = new RequestHandler(listenSocket.accept());
+        RequestHandler requestHandler = new RequestHandler(listenSocket.accept(), new UserService());
         BufferedOutputStream bufferedStream = new BufferedOutputStream(connection.getOutputStream());
 
         bufferedStream.write(requestHeaders.getBytes(StandardCharsets.UTF_8));

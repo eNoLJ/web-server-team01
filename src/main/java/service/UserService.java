@@ -5,14 +5,15 @@ import model.User;
 import java.util.Map;
 
 import static db.DataBase.addUser;
+import static db.DataBase.matchUserByIdAndPassword;
 
 public class UserService {
 
-    public static void save(Map<String, String> userInfo) {
+    public void save(Map<String, String> userInfo) {
         saveUser(User.of(userInfo));
     }
 
-    private static void saveUser(User user) {
+    private void saveUser(User user) {
         if (user != null) {
             addUser(user);
         }
