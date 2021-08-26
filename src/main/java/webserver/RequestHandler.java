@@ -40,14 +40,15 @@ public class RequestHandler extends Thread {
             if (requestInfo.matchMethod("POST")) {
                 if (requestInfo.matchUri("/user/create")) {
                     userService.save(requestInfo.getBodies());
+                    response302Header(dos, "/index.html");
                 }
                 if (requestInfo.matchUri("/user/login")) {
                     boolean isLogin = userService.login(requestInfo.getBodies());
                     if (!isLogin) {
-                        response302Header(dos, "/user/login_failed.html");
+                        response302Header(dos, "/user/login_failed.html", false);
                     }
+                    response302Header(dos, "/index.html", true);
                 }
-                response302Header(dos, "/index.html");
             }
         } catch (IOException e) {
             log.error(e.getMessage());
@@ -70,6 +71,19 @@ public class RequestHandler extends Thread {
             dos.writeBytes("HTTP/1.1 302 Found\r\n");
             dos.writeBytes("Location: http://localhost:8080" + redirectUri + "\r\n");
             dos.writeBytes("\r\n");
+            dos.close();
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void response302Header(DataOutputStream dos, String redirectUri, boolean loginCookie) {
+        try {
+            dos.writeBytes("HTTP/1.1 302 Found\r\n");
+            dos.writeBytes("Location: http://localhost:8080" + redirectUri + "\r\n");
+            dos.writeBytes("Set-Cookie: logined=" + loginCookie + "; Path=/" + "\r\n");
+            dos.writeBytes("\r\n");
+            dos.close();
         } catch (IOException e) {
             log.error(e.getMessage());
         }
@@ -79,6 +93,7 @@ public class RequestHandler extends Thread {
         try {
             dos.write(body, 0, body.length);
             dos.flush();
+            dos.close();
         } catch (IOException e) {
             log.error(e.getMessage());
         }
