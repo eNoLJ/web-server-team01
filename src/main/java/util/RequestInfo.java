@@ -9,8 +9,7 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import static util.HttpRequestUtils.parseHeader;
-import static util.HttpRequestUtils.parseValues;
+import static util.HttpRequestUtils.*;
 import static util.IOUtils.readData;
 
 public class RequestInfo {
@@ -19,6 +18,12 @@ public class RequestInfo {
     private final Map<String, String> startLine;
     private final Map<String, String> headers;
     private final Map<String, String> bodies;
+
+    private RequestInfo(Map<String, String> startLine, Map<String, String> headers, Map<String, String> bodies) {
+        this.startLine = startLine;
+        this.headers = headers;
+        this.bodies = bodies;
+    }
 
     public static RequestInfo of(BufferedReader bufferedReader) throws IOException {
         Map<String, String> startLine = getStartLine(bufferedReader);
@@ -58,12 +63,6 @@ public class RequestInfo {
         return parseValues(body, "&");
     }
 
-    private RequestInfo(Map<String, String> startLine, Map<String, String> headers, Map<String, String> bodies) {
-        this.startLine = startLine;
-        this.headers = headers;
-        this.bodies = bodies;
-    }
-
     public boolean matchMethod(String method) {
         return startLine.get("Method").equals(method);
     }
@@ -78,5 +77,10 @@ public class RequestInfo {
 
     public String getUri() {
         return startLine.get("Uri");
+    }
+
+    public boolean isLogin() {
+        String isLogin = parseCookies(headers.get("Cookie")).get("logined");
+        return Boolean.parseBoolean(isLogin);
     }
 }

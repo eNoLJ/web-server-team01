@@ -32,7 +32,11 @@ public class RequestHandler extends Thread {
             RequestInfo requestInfo = RequestInfo.of(bufferedReader);
 
             if (requestInfo.matchMethod("GET")) {
-                byte[] body = getBodyByUri(requestInfo.getUri());
+                String uri = requestInfo.getUri();
+                if (requestInfo.matchUri("/user/list.html") && !requestInfo.isLogin()) {
+                    uri = "/user/login.html";
+                }
+                byte[] body = getBodyByUri(uri);
                 response200Header(dos, body.length);
                 responseBody(dos, body);
             }
