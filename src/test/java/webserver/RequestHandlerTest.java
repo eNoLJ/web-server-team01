@@ -13,6 +13,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static db.DataBase.addUser;
@@ -41,7 +42,7 @@ public class RequestHandlerTest {
     @Test
     @DisplayName("Http 요청에 따라 응답이 정상적으로 오는지 확인")
     public void run() throws IOException {
-        String requestHeaders = createRequestHeaders("GET", "/index.html");
+        String requestHeaders = createRequestHeaders("GET", "/index.html", new HashMap<>());
         sendRequest(requestHeaders);
         String expectedResponseMessage = createResponse200(6903, "/index.html");
         BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -51,7 +52,10 @@ public class RequestHandlerTest {
     @Test
     @DisplayName("body를 파싱해 user를 저장하는지 확인")
     public void signUp() throws IOException {
-        String requestHeaders = createRequestHeaders("POST", "/user/create", 80)
+        Map<String, String> headers = new HashMap<String, String>() {{
+            put("Content-Length", "80");
+        }};
+        String requestHeaders = createRequestHeaders("POST", "/user/create", headers)
                 + "userId=testUser&password=testPassword&name=testName&email=testEmail@test.co.kr";
         sendRequest(requestHeaders);
         User user = findUserById("testUser");
@@ -61,7 +65,10 @@ public class RequestHandlerTest {
     @Test
     @DisplayName("회원 가입 성공 시, HTTP 302 응답코드 발생 및 index.html로 redirect되는지 확인")
     public void redirectIndex() throws IOException {
-        String requestHeaders = createRequestHeaders("POST", "/user/create", 80)
+        Map<String, String> headers = new HashMap<String, String>() {{
+            put("Content-Length", "80");
+        }};
+        String requestHeaders = createRequestHeaders("POST", "/user/create", headers)
                 + "userId=testUser&password=testPasswordFailed";
         sendRequest(requestHeaders);
         String expectedResponseMessage = createResponse302("/index.html");
@@ -73,7 +80,10 @@ public class RequestHandlerTest {
     @DisplayName("로그인 성공 시, cookie값에 logined=true로 표시되고, index.html로 redirect되는지 확인")
     public void LoginSuccess() throws IOException {
         addUser(createUser());
-        String requestHeaders = createRequestHeaders("POST", "/user/login", 37)
+        Map<String, String> headers = new HashMap<String, String>() {{
+            put("Content-Length", "37");
+        }};
+        String requestHeaders = createRequestHeaders("POST", "/user/login", headers)
                 + "userId=testUser&password=testPassword";
         sendRequest(requestHeaders);
         String expectedResponseMessage = createResponse302("/index.html")
@@ -86,11 +96,28 @@ public class RequestHandlerTest {
     @DisplayName("로그인 실패 시, cookie값에 logined=false로 표시되고, /user/login_failed.html로 redirect되는지 확인")
     public void loginFailed() throws IOException {
         addUser(createUser());
-        String requestHeaders = createRequestHeaders("POST", "/user/login", 43)
+        Map<String, String> headers = new HashMap<String, String>() {{
+            put("Content-Length", "43");
+        }};
+        String requestHeaders = createRequestHeaders("POST", "/user/login", headers)
                 + "userId=testUser&password=testPasswordFailed";
         sendRequest(requestHeaders);
         String expectedResponseMessage = createResponse302("/user/login_failed.html")
                 + "Set-Cookie: logined=false; Path=/" + System.lineSeparator();
+        BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        assertThat(br.lines().collect(Collectors.joining(System.lineSeparator()))).isEqualTo(expectedResponseMessage);
+    }
+
+    @Test
+    @DisplayName("로그인이 되어있는 유저일 경우, /user/list.html을 반환하는지 확인")
+    public void isLogin() throws IOException {
+        addUser(createUser());
+        Map<String, String> headers = new HashMap<String, String>() {{
+            put("Cookie", "logined=true");
+        }};
+        String requestHeaders = createRequestHeaders("GET", "/user/list.html", headers);
+        sendRequest(requestHeaders);
+        String expectedResponseMessage = createResponse200(4801, "/user/list.html");
         BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         assertThat(br.lines().collect(Collectors.joining(System.lineSeparator()))).isEqualTo(expectedResponseMessage);
     }
@@ -118,21 +145,15 @@ public class RequestHandlerTest {
                 "Location: http://localhost:8080" + uri + System.lineSeparator();
     }
 
-    private String createRequestHeaders(String method, String uri) {
-        return method + " " + uri + " HTTP/1.1" + System.lineSeparator() +
+    private String createRequestHeaders(String method, String uri, Map<String, String> headers) {
+        StringBuilder result = new StringBuilder(method + " " + uri + " HTTP/1.1" + System.lineSeparator() +
                 "Host: localhost:8080" + System.lineSeparator() +
                 "Connection: keep-alive" + System.lineSeparator() +
-                "Accept: */*" + System.lineSeparator() +
-                "" + System.lineSeparator();
-    }
-
-    private String createRequestHeaders(String method, String uri, int contentLength) {
-        return method + " " + uri + " HTTP/1.1" + System.lineSeparator() +
-                "Host: localhost:8080" + System.lineSeparator() +
-                "Connection: keep-alive" + System.lineSeparator() +
-                "Accept: */*" + System.lineSeparator() +
-                "Content-Length: " + contentLength + System.lineSeparator() +
-                "" + System.lineSeparator();
+                "Accept: */*" + System.lineSeparator());
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            result.append(entry.getKey()).append(": ").append(entry.getValue()).append(System.lineSeparator());
+        }
+        return result.append("").append(System.lineSeparator()).toString();
     }
 
     private User createUser() {
