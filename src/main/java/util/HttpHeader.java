@@ -1,0 +1,40 @@
+package util;
+
+public enum HttpHeader {
+
+    CONTENT_TYPE("Content-Type"),
+    CONTENT_LENGTH("Content-length"),
+    ACCEPT("Accept"),
+    LOCATION("Location"),
+    SET_COOKIE("Set-Cookie");
+
+    private final String value;
+
+    HttpHeader(String value) {
+        this.value = value;
+    }
+
+    public static String createContentType(String extension) {
+        return CONTENT_TYPE + ": text/" + extension + ";charset=utf-8;";
+    }
+
+    public static String createContentLength(int contentLength) {
+        return CONTENT_LENGTH + ": " + contentLength;
+    }
+
+    public static String createAccept(String accept) {
+        return ACCEPT.value + ": " + accept;
+    }
+
+    public static String createLocation(String location) {
+        return LOCATION.value + ": http://localhost:8080" + location;
+    }
+
+    public static String createCookie(String cookies) {
+        return SET_COOKIE.value + ": " + cookies;
+    }
+
+    public String getValue() {
+        return value;
+    }
+}

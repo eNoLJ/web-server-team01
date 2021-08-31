@@ -9,6 +9,10 @@ import org.slf4j.LoggerFactory;
 import service.UserService;
 import util.RequestInfo;
 
+import static util.HttpHeader.*;
+import static util.HttpMethod.GET;
+import static util.HttpMethod.POST;
+
 public class RequestHandler extends Thread {
 
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -31,7 +35,7 @@ public class RequestHandler extends Thread {
             DataOutputStream dos = new DataOutputStream(out);
             RequestInfo requestInfo = RequestInfo.of(bufferedReader);
 
-            if (requestInfo.matchMethod("GET")) {
+            if (requestInfo.matchMethod(GET)) {
                 String uri = requestInfo.getUri();
                 if (requestInfo.matchUri("/user/list.html") && !requestInfo.isLogin()) {
                     uri = "/user/login.html";
@@ -41,7 +45,7 @@ public class RequestHandler extends Thread {
                 responseBody(dos, body);
             }
 
-            if (requestInfo.matchMethod("POST")) {
+            if (requestInfo.matchMethod(POST)) {
                 if (requestInfo.matchUri("/user/create")) {
                     userService.save(requestInfo.getBodies());
                     response302Header(dos, "/index.html");
@@ -62,8 +66,8 @@ public class RequestHandler extends Thread {
     private void response200Header(DataOutputStream dos, int lengthOfBodyContent, String extension) {
         try {
             dos.writeBytes("HTTP/1.1 200 OK\r\n");
-            dos.writeBytes("Content-Type: text/"+ extension +";charset=utf-8\r\n");
-            dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
+            dos.writeBytes(createContentLength(lengthOfBodyContent) + "\r\n");
+            dos.writeBytes(createContentType(extension) + "\r\n");
             dos.writeBytes("\r\n");
         } catch (IOException e) {
             log.error(e.getMessage());
@@ -73,7 +77,7 @@ public class RequestHandler extends Thread {
     private void response302Header(DataOutputStream dos, String redirectUri) {
         try {
             dos.writeBytes("HTTP/1.1 302 Found\r\n");
-            dos.writeBytes("Location: http://localhost:8080" + redirectUri + "\r\n");
+            dos.writeBytes(createLocation(redirectUri) + "\r\n");
             dos.writeBytes("\r\n");
             dos.close();
         } catch (IOException e) {
@@ -84,8 +88,8 @@ public class RequestHandler extends Thread {
     private void response302Header(DataOutputStream dos, String redirectUri, boolean loginCookie) {
         try {
             dos.writeBytes("HTTP/1.1 302 Found\r\n");
-            dos.writeBytes("Location: http://localhost:8080" + redirectUri + "\r\n");
-            dos.writeBytes("Set-Cookie: logined=" + loginCookie + "; Path=/" + "\r\n");
+            dos.writeBytes(createLocation(redirectUri) + "\r\n");
+            dos.writeBytes(createCookie("logined=" + loginCookie + "; Path=/") + "\r\n");
             dos.writeBytes("\r\n");
             dos.close();
         } catch (IOException e) {
