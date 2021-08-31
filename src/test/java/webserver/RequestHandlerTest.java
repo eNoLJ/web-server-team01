@@ -42,7 +42,9 @@ public class RequestHandlerTest {
     @Test
     @DisplayName("Http 요청에 따라 응답이 정상적으로 오는지 확인")
     public void run() throws IOException {
-        String requestHeaders = createRequestHeaders("GET", "/index.html", new HashMap<>());
+        String requestHeaders = createRequestHeaders("GET", "/index.html", new HashMap<String, String>() {{
+            put("Accept", "text/html");
+        }});
         sendRequest(requestHeaders);
         String expectedResponseMessage = createResponse200(6903, "/index.html");
         BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -53,6 +55,7 @@ public class RequestHandlerTest {
     @DisplayName("body를 파싱해 user를 저장하는지 확인")
     public void signUp() throws IOException {
         Map<String, String> headers = new HashMap<String, String>() {{
+            put("Accept", "text/html");
             put("Content-Length", "80");
         }};
         String requestHeaders = createRequestHeaders("POST", "/user/create", headers)
@@ -66,6 +69,7 @@ public class RequestHandlerTest {
     @DisplayName("회원 가입 성공 시, HTTP 302 응답코드 발생 및 index.html로 redirect되는지 확인")
     public void redirectIndex() throws IOException {
         Map<String, String> headers = new HashMap<String, String>() {{
+            put("Accept", "text/html");
             put("Content-Length", "80");
         }};
         String requestHeaders = createRequestHeaders("POST", "/user/create", headers)
@@ -81,6 +85,7 @@ public class RequestHandlerTest {
     public void LoginSuccess() throws IOException {
         addUser(createUser());
         Map<String, String> headers = new HashMap<String, String>() {{
+            put("Accept", "text/html");
             put("Content-Length", "37");
         }};
         String requestHeaders = createRequestHeaders("POST", "/user/login", headers)
@@ -97,6 +102,7 @@ public class RequestHandlerTest {
     public void loginFailed() throws IOException {
         addUser(createUser());
         Map<String, String> headers = new HashMap<String, String>() {{
+            put("Accept", "text/html");
             put("Content-Length", "43");
         }};
         String requestHeaders = createRequestHeaders("POST", "/user/login", headers)
@@ -113,11 +119,41 @@ public class RequestHandlerTest {
     public void isLogin() throws IOException {
         addUser(createUser());
         Map<String, String> headers = new HashMap<String, String>() {{
+            put("Accept", "text/html");
             put("Cookie", "logined=true");
         }};
         String requestHeaders = createRequestHeaders("GET", "/user/list.html", headers);
         sendRequest(requestHeaders);
         String expectedResponseMessage = createResponse200(4801, "/user/list.html");
+        BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        assertThat(br.lines().collect(Collectors.joining(System.lineSeparator()))).isEqualTo(expectedResponseMessage);
+    }
+
+    @Test
+    @DisplayName("로그인이 안되어있는 유저일 경우, /user/login.html을 반환하는지 확인")
+    public void isNotLogin() throws IOException {
+        addUser(createUser());
+        Map<String, String> headers = new HashMap<String, String>() {{
+            put("Accept", "text/html");
+            put("Cookie", "logined=false");
+        }};
+        String requestHeaders = createRequestHeaders("GET", "/user/login.html", headers);
+        sendRequest(requestHeaders);
+        String expectedResponseMessage = createResponse200(4759, "/user/login.html");
+        BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        assertThat(br.lines().collect(Collectors.joining(System.lineSeparator()))).isEqualTo(expectedResponseMessage);
+    }
+
+    @Test
+    @DisplayName(".css 파일 요청 시, 정상적으로 response 되는지 확인.")
+    public void extension() throws IOException {
+        addUser(createUser());
+        Map<String, String> headers = new HashMap<String, String>() {{
+            put("Accept", "text/css");
+        }};
+        String requestHeaders = createRequestHeaders("GET", "/css/styles.css", headers);
+        sendRequest(requestHeaders);
+        String expectedResponseMessage = createResponse200(7065, "/css/styles.css");
         BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         assertThat(br.lines().collect(Collectors.joining(System.lineSeparator()))).isEqualTo(expectedResponseMessage);
     }
@@ -133,7 +169,7 @@ public class RequestHandlerTest {
 
     private String createResponse200(int contentLength, String uri) throws IOException {
         return "HTTP/1.1 200 OK" + System.lineSeparator() +
-                "Content-Type: text/html;charset=utf-8" + System.lineSeparator() +
+                "Content-Type: text/" + getExtensionByUri(uri) + ";charset=utf-8" + System.lineSeparator() +
                 "Content-Length: " + contentLength + System.lineSeparator() +
                 "" + System.lineSeparator() +
                 Files.lines(new File("./webapp" + uri).toPath())
@@ -148,8 +184,7 @@ public class RequestHandlerTest {
     private String createRequestHeaders(String method, String uri, Map<String, String> headers) {
         StringBuilder result = new StringBuilder(method + " " + uri + " HTTP/1.1" + System.lineSeparator() +
                 "Host: localhost:8080" + System.lineSeparator() +
-                "Connection: keep-alive" + System.lineSeparator() +
-                "Accept: */*" + System.lineSeparator());
+                "Connection: keep-alive" + System.lineSeparator());
         for (Map.Entry<String, String> entry : headers.entrySet()) {
             result.append(entry.getKey()).append(": ").append(entry.getValue()).append(System.lineSeparator());
         }
@@ -163,5 +198,9 @@ public class RequestHandlerTest {
             put("name", "testName");
             put("email", "testEmail@test.co.kr");
         }});
+    }
+
+    private String getExtensionByUri(String uri) {
+        return uri.split("\\.")[1];
     }
 }
