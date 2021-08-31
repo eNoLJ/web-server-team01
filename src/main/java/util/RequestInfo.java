@@ -83,4 +83,8 @@ public class RequestInfo {
         String isLogin = parseCookies(headers.get("Cookie")).get("logined");
         return Boolean.parseBoolean(isLogin);
     }
+
+    public String getExtension() {
+        return headers.get("Accept").split(",")[0].split("/")[1];
+    }
 }

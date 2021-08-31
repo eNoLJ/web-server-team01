@@ -37,7 +37,7 @@ public class RequestHandler extends Thread {
                     uri = "/user/login.html";
                 }
                 byte[] body = getBodyByUri(uri);
-                response200Header(dos, body.length);
+                response200Header(dos, body.length, requestInfo.getExtension());
                 responseBody(dos, body);
             }
 
@@ -59,10 +59,10 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
+    private void response200Header(DataOutputStream dos, int lengthOfBodyContent, String extension) {
         try {
             dos.writeBytes("HTTP/1.1 200 OK\r\n");
-            dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+            dos.writeBytes("Content-Type: text/"+ extension +";charset=utf-8\r\n");
             dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
             dos.writeBytes("\r\n");
         } catch (IOException e) {
