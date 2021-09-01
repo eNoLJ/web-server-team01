@@ -2,16 +2,27 @@ package util;
 
 public enum HttpHeader {
 
+    HOST("Host"),
+    CONNECTION("Connection"),
     CONTENT_TYPE("Content-Type"),
     CONTENT_LENGTH("Content-length"),
     ACCEPT("Accept"),
     LOCATION("Location"),
-    SET_COOKIE("Set-Cookie");
+    SET_COOKIE("Set-Cookie"),
+    COOKIE("Cookie");
 
     private final String value;
 
     HttpHeader(String value) {
         this.value = value;
+    }
+
+    public static String createHost(String host) {
+        return HOST.value + ": " + host;
+    }
+
+    public static String createConnection(String connection) {
+        return CONNECTION.value + ": " + connection;
     }
 
     public static String createContentType(String extension) {
