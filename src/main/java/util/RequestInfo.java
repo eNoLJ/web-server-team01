@@ -6,8 +6,7 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import static util.HttpHeader.ACCEPT;
-import static util.HttpHeader.CONTENT_LENGTH;
+import static util.HttpHeader.*;
 import static util.HttpMethod.getHttpMethod;
 import static util.HttpRequestUtils.*;
 import static util.IOUtils.readData;
@@ -54,7 +53,7 @@ public class RequestInfo {
         if (!headers.containsKey(CONTENT_LENGTH.getValue())) {
             return null;
         }
-        String body = URLDecoder.decode(readData(bufferedReader, Integer.parseInt(CONTENT_LENGTH.getValue())), "UTF-8");
+        String body = URLDecoder.decode(readData(bufferedReader, Integer.parseInt(headers.get(CONTENT_LENGTH.getValue()))), "UTF-8");
         return parseValues(body, "&");
     }
 
@@ -75,7 +74,7 @@ public class RequestInfo {
     }
 
     public boolean isLogin() {
-        String isLogin = parseCookies(headers.get("Cookie")).get("logined");
+        String isLogin = parseCookies(headers.get(COOKIE.getValue())).get("logined");
         return Boolean.parseBoolean(isLogin);
     }
 
