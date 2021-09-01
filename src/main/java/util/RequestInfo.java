@@ -65,14 +65,6 @@ public class RequestInfo {
         return this.uri.equals(uri);
     }
 
-    public Map<String, String> getBodies() {
-        return bodies;
-    }
-
-    public String getUri() {
-        return this.uri;
-    }
-
     public boolean isLogin() {
         String isLogin = parseCookies(headers.get(COOKIE.getValue())).get("logined");
         return Boolean.parseBoolean(isLogin);
@@ -80,5 +72,17 @@ public class RequestInfo {
 
     public String getExtension() {
         return headers.get(ACCEPT.getValue()).split(",")[0].split("/")[1];
+    }
+
+    public HttpMethod getMethod() {
+        return httpMethod;
+    }
+
+    public Map<String, String> getBodies() {
+        return bodies;
+    }
+
+    public String getUri() {
+        return this.uri;
     }
 }

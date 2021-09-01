@@ -1,5 +1,6 @@
 package webserver;
 
+import controller.UserController;
 import model.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
@@ -162,7 +163,7 @@ public class RequestHandlerTest {
     }
 
     private void sendRequest(String requestHeaders) throws IOException {
-        RequestHandler requestHandler = new RequestHandler(listenSocket.accept(), new UserService());
+        RequestHandler requestHandler = new RequestHandler(listenSocket.accept(), new UserController(new UserService()));
         BufferedOutputStream bufferedStream = new BufferedOutputStream(connection.getOutputStream());
         bufferedStream.write(requestHeaders.getBytes(StandardCharsets.UTF_8));
         bufferedStream.write(System.lineSeparator().getBytes(StandardCharsets.UTF_8));

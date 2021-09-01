@@ -2,26 +2,24 @@ package webserver;
 
 import java.io.*;
 import java.net.Socket;
-import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.BiConsumer;
 
+import controller.UserController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import service.UserService;
 import util.RequestInfo;
-
-import static util.HttpHeader.*;
-import static util.HttpMethod.GET;
-import static util.HttpMethod.POST;
 
 public class RequestHandler extends Thread {
 
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
     private final Socket connection;
-    private final UserService userService;
+    private final UserController userController;
 
-    public RequestHandler(Socket connectionSocket, UserService userService) {
+    public RequestHandler(Socket connectionSocket, UserController userController) {
         this.connection = connectionSocket;
-        this.userService = userService;
+        this.userController = userController;
     }
 
     public void run() {
@@ -35,29 +33,22 @@ public class RequestHandler extends Thread {
             DataOutputStream dos = new DataOutputStream(out);
             RequestInfo requestInfo = RequestInfo.of(bufferedReader);
 
-            if (requestInfo.matchMethod(GET)) {
-                String uri = requestInfo.getUri();
-                if (requestInfo.matchUri("/user/list.html") && !requestInfo.isLogin()) {
-                    uri = "/user/login.html";
-                }
-                byte[] body = getBodyByUri(uri);
-                response200Header(dos, body.length, requestInfo.getExtension());
-                responseBody(dos, body);
-            }
+            Map<String, Map<String, BiConsumer<DataOutputStream, RequestInfo>>> controller = new HashMap<String, Map<String, BiConsumer<DataOutputStream, RequestInfo>>>() {{
+                put("GET", new HashMap<String, BiConsumer<DataOutputStream, RequestInfo>>() {{
+                    put("/user/list.html", userController::responseList);
+                }});
+                put("POST", new HashMap<String, BiConsumer<DataOutputStream, RequestInfo>>() {{
+                    put("/user/create", userController::save);
+                    put("/user/login", userController::login);
+                }});
+            }};
 
-            if (requestInfo.matchMethod(POST)) {
-                if (requestInfo.matchUri("/user/create")) {
-                    userService.save(requestInfo.getBodies());
-                    response302Header(dos, "/index.html");
-                }
-                if (requestInfo.matchUri("/user/login")) {
-                    boolean isLogin = userService.login(requestInfo.getBodies());
-                    if (!isLogin) {
-                        response302Header(dos, "/user/login_failed.html", false);
-                    }
-                    response302Header(dos, "/index.html", true);
-                }
+            BiConsumer<DataOutputStream, RequestInfo> method = controller.get(requestInfo.getMethod().name()).get(requestInfo.getUri());
+            if (method != null) {
+                method.accept(dos, requestInfo);
             }
+            userController.responseFile(dos, requestInfo);
+
         } catch (IOException e) {
             log.error(e.getMessage());
         }
