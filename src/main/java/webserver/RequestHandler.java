@@ -66,8 +66,8 @@ public class RequestHandler extends Thread {
     private void response200Header(DataOutputStream dos, int lengthOfBodyContent, String extension) {
         try {
             dos.writeBytes("HTTP/1.1 200 OK\r\n");
-            dos.writeBytes(createContentLength(lengthOfBodyContent) + "\r\n");
             dos.writeBytes(createContentType(extension) + "\r\n");
+            dos.writeBytes(createContentLength(lengthOfBodyContent) + "\r\n");
             dos.writeBytes("\r\n");
         } catch (IOException e) {
             log.error(e.getMessage());
