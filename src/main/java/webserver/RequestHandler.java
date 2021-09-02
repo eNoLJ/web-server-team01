@@ -20,6 +20,7 @@ public class RequestHandler extends Thread {
 
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
     private static final Map<HttpMethod, Map<String, BiConsumer<DataOutputStream, RequestInfo>>> controller;
+    private final Socket connection;
 
     static {
         UserController userController = new UserController(new UserService());
@@ -34,8 +35,6 @@ public class RequestHandler extends Thread {
             }});
         }};
     }
-
-    private final Socket connection;
 
     public RequestHandler(Socket connectionSocket) {
         this.connection = connectionSocket;
