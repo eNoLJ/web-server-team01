@@ -2,22 +2,42 @@ package webserver;
 
 import java.io.*;
 import java.net.Socket;
-import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.BiConsumer;
 
+import controller.UserController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import service.UserService;
+import util.HttpMethod;
 import util.RequestInfo;
+
+import static util.HttpMethod.GET;
+import static util.HttpMethod.POST;
 
 public class RequestHandler extends Thread {
 
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
+    private static final Map<HttpMethod, Map<String, BiConsumer<DataOutputStream, RequestInfo>>> controller;
     private final Socket connection;
-    private final UserService userService;
 
-    public RequestHandler(Socket connectionSocket, UserService userService) {
+    static {
+        UserController userController = new UserController(new UserService());
+        controller = new HashMap<HttpMethod, Map<String, BiConsumer<DataOutputStream, RequestInfo>>>() {{
+            put(GET, new HashMap<String, BiConsumer<DataOutputStream, RequestInfo>>() {{
+                put("/user/list.html", userController::responseList);
+                put("/default", userController::responseFile);
+            }});
+            put(POST, new HashMap<String, BiConsumer<DataOutputStream, RequestInfo>>() {{
+                put("/user/create", userController::save);
+                put("/user/login", userController::login);
+            }});
+        }};
+    }
+
+    public RequestHandler(Socket connectionSocket) {
         this.connection = connectionSocket;
-        this.userService = userService;
     }
 
     public void run() {
@@ -31,79 +51,14 @@ public class RequestHandler extends Thread {
             DataOutputStream dos = new DataOutputStream(out);
             RequestInfo requestInfo = RequestInfo.of(bufferedReader);
 
-            if (requestInfo.matchMethod("GET")) {
-                String uri = requestInfo.getUri();
-                if (requestInfo.matchUri("/user/list.html") && !requestInfo.isLogin()) {
-                    uri = "/user/login.html";
-                }
-                byte[] body = getBodyByUri(uri);
-                response200Header(dos, body.length, requestInfo.getExtension());
-                responseBody(dos, body);
+            BiConsumer<DataOutputStream, RequestInfo> executionController = controller.get(requestInfo.getMethod()).get(requestInfo.getUri());
+            if (executionController != null) {
+                executionController.accept(dos, requestInfo);
+                return;
             }
-
-            if (requestInfo.matchMethod("POST")) {
-                if (requestInfo.matchUri("/user/create")) {
-                    userService.save(requestInfo.getBodies());
-                    response302Header(dos, "/index.html");
-                }
-                if (requestInfo.matchUri("/user/login")) {
-                    boolean isLogin = userService.login(requestInfo.getBodies());
-                    if (!isLogin) {
-                        response302Header(dos, "/user/login_failed.html", false);
-                    }
-                    response302Header(dos, "/index.html", true);
-                }
-            }
+            controller.get(requestInfo.getMethod()).get("/default").accept(dos, requestInfo);
         } catch (IOException e) {
             log.error(e.getMessage());
         }
-    }
-
-    private void response200Header(DataOutputStream dos, int lengthOfBodyContent, String extension) {
-        try {
-            dos.writeBytes("HTTP/1.1 200 OK\r\n");
-            dos.writeBytes("Content-Type: text/"+ extension +";charset=utf-8\r\n");
-            dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
-            dos.writeBytes("\r\n");
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        }
-    }
-
-    private void response302Header(DataOutputStream dos, String redirectUri) {
-        try {
-            dos.writeBytes("HTTP/1.1 302 Found\r\n");
-            dos.writeBytes("Location: http://localhost:8080" + redirectUri + "\r\n");
-            dos.writeBytes("\r\n");
-            dos.close();
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        }
-    }
-
-    private void response302Header(DataOutputStream dos, String redirectUri, boolean loginCookie) {
-        try {
-            dos.writeBytes("HTTP/1.1 302 Found\r\n");
-            dos.writeBytes("Location: http://localhost:8080" + redirectUri + "\r\n");
-            dos.writeBytes("Set-Cookie: logined=" + loginCookie + "; Path=/" + "\r\n");
-            dos.writeBytes("\r\n");
-            dos.close();
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        }
-    }
-
-    private void responseBody(DataOutputStream dos, byte[] body) {
-        try {
-            dos.write(body, 0, body.length);
-            dos.flush();
-            dos.close();
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        }
-    }
-
-    private byte[] getBodyByUri(String uri) throws IOException {
-        return Files.readAllBytes(new File("./webapp" + uri).toPath());
     }
 }
