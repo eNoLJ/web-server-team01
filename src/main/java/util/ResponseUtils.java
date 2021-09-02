@@ -28,7 +28,6 @@ public class ResponseUtils {
             dos.writeBytes("HTTP/1.1 302 Found\r\n");
             dos.writeBytes(createLocation(redirectUri) + "\r\n");
             dos.writeBytes("\r\n");
-            dos.close();
         } catch (IOException e) {
             log.error(e.getMessage());
         }
@@ -40,7 +39,6 @@ public class ResponseUtils {
             dos.writeBytes(createLocation(redirectUri) + "\r\n");
             dos.writeBytes(createCookie("logined=" + loginCookie + "; Path=/") + "\r\n");
             dos.writeBytes("\r\n");
-            dos.close();
         } catch (IOException e) {
             log.error(e.getMessage());
         }
@@ -50,7 +48,6 @@ public class ResponseUtils {
         try {
             dos.write(body, 0, body.length);
             dos.flush();
-            dos.close();
         } catch (IOException e) {
             log.error(e.getMessage());
         }

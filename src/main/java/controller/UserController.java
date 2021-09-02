@@ -48,6 +48,7 @@ public class UserController {
         boolean isLogin = userService.login(requestInfo.getBodies());
         if (!isLogin) {
             response302Header(dos, "/user/login_failed.html", false);
+            return;
         }
         response302Header(dos, "/index.html", true);
     }
