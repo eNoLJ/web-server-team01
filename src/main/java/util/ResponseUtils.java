@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import static util.HttpHeader.*;
+import static util.status.HttpHeader.*;
 
 public class ResponseUtils {
 

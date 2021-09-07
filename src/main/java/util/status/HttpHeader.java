@@ -1,4 +1,4 @@
-package util;
+package util.status;
 
 public enum HttpHeader {
 
@@ -31,10 +31,6 @@ public enum HttpHeader {
 
     public static String createContentLength(int contentLength) {
         return CONTENT_LENGTH + ": " + contentLength;
-    }
-
-    public static String createAccept(String accept) {
-        return ACCEPT.value + ": " + accept;
     }
 
     public static String createLocation(String location) {
