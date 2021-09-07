@@ -10,18 +10,18 @@ public class User {
     private final String name;
     private final String email;
 
-    public static User of(Map<String, String> userInfo) {
-        return new User(userInfo.get("userId"),
-                userInfo.get("password"),
-                userInfo.get("name"),
-                userInfo.get("email"));
-    }
-
     private User(String userId, String password, String name, String email) {
         this.userId = userId;
         this.password = password;
         this.name = name;
         this.email = email;
+    }
+
+    public static User of(Map<String, String> userInfo) {
+        return new User(userInfo.get("userId"),
+                userInfo.get("password"),
+                userInfo.get("name"),
+                userInfo.get("email"));
     }
 
     public boolean matchPassword(String password) {
