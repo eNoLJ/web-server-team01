@@ -1,5 +1,6 @@
 package webserver;
 
+import controller.WebController;
 import model.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
@@ -18,9 +19,9 @@ import java.util.stream.Collectors;
 import static db.DataBase.addUser;
 import static db.DataBase.findUserById;
 import static org.assertj.core.api.Assertions.assertThat;
-import static util.HttpHeader.*;
-import static util.HttpMethod.GET;
-import static util.HttpMethod.POST;
+import static util.status.HttpHeader.*;
+import static util.status.HttpMethod.GET;
+import static util.status.HttpMethod.POST;
 
 public class RequestHandlerTest {
 
@@ -28,11 +29,13 @@ public class RequestHandlerTest {
 
     private ServerSocket listenSocket;
     private Socket connection;
+    private WebController webController;
 
     @BeforeEach
     void startServer() throws IOException {
         listenSocket = new ServerSocket(PORT);
         connection = new Socket("localhost", PORT);
+        webController = new WebController();
     }
 
     @AfterEach
@@ -161,7 +164,7 @@ public class RequestHandlerTest {
     }
 
     private void sendRequest(String requestHeaders) throws IOException {
-        RequestHandler requestHandler = new RequestHandler(listenSocket.accept());
+        RequestHandler requestHandler = new RequestHandler(listenSocket.accept(), webController);
         BufferedOutputStream bufferedStream = new BufferedOutputStream(connection.getOutputStream());
         bufferedStream.write(requestHeaders.getBytes(StandardCharsets.UTF_8));
         bufferedStream.write(System.lineSeparator().getBytes(StandardCharsets.UTF_8));
