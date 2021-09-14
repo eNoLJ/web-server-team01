@@ -26,19 +26,27 @@ public enum HttpHeader {
     }
 
     public static String createContentType(String extension) {
-        return CONTENT_TYPE + ": text/" + extension + ";charset=utf-8;";
+        return CONTENT_TYPE.value + ": text/" + extension + ";charset=utf-8;";
     }
 
     public static String createContentLength(int contentLength) {
-        return CONTENT_LENGTH + ": " + contentLength;
+        return CONTENT_LENGTH.value + ": " + contentLength;
+    }
+
+    public static String createAccept(String accept) {
+        return ACCEPT.value + ": " + accept;
     }
 
     public static String createLocation(String location) {
         return LOCATION.value + ": http://localhost:8080" + location;
     }
 
-    public static String createCookie(String cookies) {
+    public static String createSetCookie(String cookies) {
         return SET_COOKIE.value + ": " + cookies;
+    }
+
+    public static String createCookie(String cookies) {
+        return COOKIE.value + ": " + cookies;
     }
 
     public String getValue() {

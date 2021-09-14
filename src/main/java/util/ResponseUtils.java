@@ -37,7 +37,7 @@ public class ResponseUtils {
         try {
             dos.writeBytes("HTTP/1.1 302 Found\r\n");
             dos.writeBytes(createLocation(redirectUri) + "\r\n");
-            dos.writeBytes(createCookie("logined=" + loginCookie + "; Path=/") + "\r\n");
+            dos.writeBytes(createSetCookie("logined=" + loginCookie + "; Path=/") + "\r\n");
             dos.writeBytes("\r\n");
         } catch (IOException e) {
             log.error(e.getMessage());

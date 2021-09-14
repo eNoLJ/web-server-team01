@@ -97,7 +97,7 @@ public class RequestHandlerTest {
                 + "userId=testUser&password=testPassword";
         sendRequest(requestHeaders);
         String expectedResponseMessage = createResponse302("/index.html")
-                + createCookie("logined=true; Path=/") + System.lineSeparator();
+                + createSetCookie("logined=true; Path=/") + System.lineSeparator();
         BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         assertThat(br.lines().collect(Collectors.joining(System.lineSeparator()))).isEqualTo(expectedResponseMessage);
     }
@@ -114,7 +114,7 @@ public class RequestHandlerTest {
                 + "userId=testUser&password=testPasswordFailed";
         sendRequest(requestHeaders);
         String expectedResponseMessage = createResponse302("/user/login_failed.html")
-                + createCookie("logined=false; Path=/") + System.lineSeparator();
+                + createSetCookie("logined=false; Path=/") + System.lineSeparator();
         BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         assertThat(br.lines().collect(Collectors.joining(System.lineSeparator()))).isEqualTo(expectedResponseMessage);
     }
